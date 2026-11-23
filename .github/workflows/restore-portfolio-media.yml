@@ -1,4 +1,4 @@
-name: Restore original Andrea Segura portfolio media
+name: Restore verified original Andrea Segura portfolio files
 on:
   push:
     paths:
@@ -13,73 +13,59 @@ jobs:
   restore:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout verified portfolio source
+      - name: Checkout verified portfolio source and staged original bytes
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           persist-credentials: true
-      - name: Download original photos and QR with byte-for-byte verification
-        env:
-          ORIGINAL_PORTFOLIO_BASE: https://andrea-segura-portfolio.pureliveguy.chatgpt.site/
+      - name: Reconstruct and SHA-256 verify original photographs and Face Card
         run: |
           python3 - <<'PY'
+          import base64
           import hashlib
-          import os
-          import pathlib
-          import urllib.parse
-          import urllib.request
-          import time
+          from pathlib import Path
 
-          base = os.environ["ORIGINAL_PORTFOLIO_BASE"]
-          manifest = pathlib.Path("SHA256SUMS.txt").read_text(encoding="utf-8")
-          items = []
-          for line in manifest.splitlines():
+          manifest = Path("SHA256SUMS.txt").read_text(encoding="utf-8").splitlines()
+          expected = {}
+          for line in manifest:
               if not line.strip():
                   continue
               checksum, rel = line.split("  ", 1)
-              if rel == "face-card-qr.png" or rel.startswith("media/"):
-                  items.append((checksum, rel))
-          photos = [r for _,r in items if r.startswith("media/")]
-          assert len(photos) == 41, f"Expected 41 originals, found {len(photos)}"
-          print(f"Downloading {len(items)} original media files with strict SHA-256 checks")
-          for expected, rel in items:
-              if rel.startswith("/") or ".." in pathlib.PurePosixPath(rel).parts:
-                  raise RuntimeError(f"Invalid asset path: {rel}")
-              url = urllib.parse.urljoin(base, urllib.parse.quote(rel, safe="/"))
-              error = None
-              for attempt in range(3):
-                  try:
-                      request = urllib.request.Request(url, headers={"User-Agent":"Mozilla/5.0 (SEGURA archive verification)"})
-                      with urllib.request.urlopen(request, timeout=90) as response:
-                          data = response.read()
-                      actual = hashlib.sha256(data).hexdigest()
-                      if actual != expected:
-                          raise ValueError(f"SHA-256 mismatch for {rel}: {actual} != {expected}; refusing altered data")
-                      dest = pathlib.Path(rel)
-                      dest.parent.mkdir(parents=True, exist_ok=True)
-                      dest.write_bytes(data)
-                      print(f"VERIFIED {rel} ({len(data)} bytes)")
-                      error = None
-                      break
-                  except Exception as exc:
-                      error = exc
-                      if isinstance(exc, ValueError):
-                          break
-                      time.sleep(attempt + 1)
-              if error is not None:
-                  raise RuntimeError(f"Unable to safely restore {rel} from the original published source: {error}")
+              if rel.startswith("/") or ".." in Path(rel).parts:
+                  raise RuntimeError("Unsafe manifest path")
+              expected[rel] = checksum
+          assets = {path:digest for path,digest in expected.items()
+                    if path.startswith("media/") or path == "face-card-qr.png"}
+          assert len([path for path in assets if path.startswith("media/")]) == 41, "Expected 41 original portfolio photos"
+          assert len(assets) == 42, "Expected photos and QR image"
+          for rel, digest in assets.items():
+              filename = Path(rel).name
+              parts = sorted(Path(".transfer").glob(filename+".part*.txt"))
+              if not parts:
+                  raise RuntimeError(f"Missing staged original bytes for {rel}")
+              encoded = b"".join(p.read_bytes().strip() for p in parts)
+              original = base64.b64decode(encoded, validate=True)
+              actual = hashlib.sha256(original).hexdigest()
+              if actual != digest:
+                  raise RuntimeError(f"SHA-256 MISMATCH: {rel} (refusing to publish changed imagery)")
+              dest = Path(rel)
+              dest.parent.mkdir(parents=True, exist_ok=True)
+              dest.write_bytes(original)
+              print(f"VERIFIED {rel}, {len(original)} original bytes")
+          for rel, digest in expected.items():
+              path = Path(rel)
+              if not path.is_file():
+                  raise RuntimeError(f"Missing source asset: {rel}")
+              actual = hashlib.sha256(path.read_bytes()).hexdigest()
+              if actual != digest:
+                  raise RuntimeError(f"MANIFEST MISMATCH: {rel}")
+          print(f"SUCCESS: ALL {len(expected)} SOURCE FILES VERIFIED BYTE-FOR-BYTE")
           PY
-      - name: Validate all original media against manifest
-        run: |
-          grep '  media/' SHA256SUMS.txt | sha256sum --check --strict
-          grep '  face-card-qr.png$' SHA256SUMS.txt | sha256sum --check --strict
-      - name: Commit original verified media
+      - name: Commit original media and remove temporary encoded transfer files
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm -r -- .transfer
           git add -- media/ face-card-qr.png
-          if ! git diff --cached --quiet; then
-            git commit -m "Restore 41 verified original portfolio photographs and Face Card QR"
-            git push origin HEAD:main
-          else
-            echo "Verified media already committed"
-          fi
+          git diff --cached --stat
+          git commit -m "Restore complete Andrea Segura portfolio with 41 SHA-256 verified originals"
+          git push origin HEAD:main
