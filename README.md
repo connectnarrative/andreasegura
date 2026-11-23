@@ -1,25 +1,27 @@
-# SEGURA — Creative Studio & Talent
+# Andrea Segura — Model Portfolio & Face Card
 
-This repository holds the SEGURA website. Initial deployment is an editorial brand preview, not the complete public portfolio.
+**Source:** The original Andrea Segura portfolio and Face Card website built in ChatGPT, restored from the user-provided `Andrea_Segura_Face_Card.zip`.
 
-## Approved brand direction
+This is **not** a SEGURA agency placeholder page. The source code, 41 photos, QR image, original text, and interactions were transferred without redesigning the website.
 
-- Name: **SEGURA**
-- Palette: near-black `#0B0B0B`, off-white `#F6F4EE`, stone `#D6D2C8`, dark oxblood `#421721`
-- Position: creative studio for Talent / Locations / Production; focus on Fashion / Beauty / Hospitality
-- Style: raw editorial, contemporary, typographically bold, minimal, no ornamental luxury or faux magazine covers
-- Model policy: the founder is a lead model; additional signed talent must receive equal visibility when published
+## Files
+- `index.html` — original Spanish/English portfolio, categories, Face Card, and casting inquiry UI
+- `style.css`, `portfolio.js` — original site styles and interactions
+- `media/` — 41 byte-identical original photographs
+- `face-card-qr.png` — original QR image (currently references the earlier ChatGPT site)
+- `SHA256SUMS.txt` — verification manifest for every source file
+- `README.txt` — original ZIP notes
 
-## IMPORTANT: Asset and publication policy
+## Media integrity
+The complete site was restored by GitHub Actions with SHA-256 verification of all source files. Photos remain original and have not been regenerated, retouched, cropped, modified, or substituted. See the completed verification workflow in GitHub Actions.
 
-Original photographs and videos are immutable: do **not** use generative editing, face/body retouching, background replacement, or create derivatives without explicit approval. Photograph licensing and commercial publication rights have not yet been verified; therefore, no portfolio photography is included in this preview.
+## Deployment
+This is a static website and can deploy directly from the repository root in Vercel, framework **Other** (no build command). Publish from `main`. The HTML currently includes `noindex,nofollow` and will remain unindexed until the owner approves public launch.
 
-Do not publish proposed package prices, fake case studies, invented social proof, or unverified contact information. The logo, font pairings and site copy remain subject to final review. This build is marked **noindex** until approved for public launch.
+### Known pre-launch items
+- The Face Card QR still points to the previous private ChatGPT-hosted portfolio, not a new Vercel domain.
+- The inquiry/casting UI formats a brief but is not connected to a verified message inbox.
+- Check photograph publication permissions before broadly marketing the site.
+- Brand colors/creative strategy for the separate SEGURA agency must not overwrite this model portfolio without explicit approval.
 
-## Deploy
-
-Static HTML preview: Vercel detects `index.html` and hosts it without a build command. GitHub `main` is intended to be the deployment branch. No secrets required.
-
-## Future work
-
-Build the approved portfolio/agency site in Work, obtain media permission and contracts, test live inquiry delivery, and review with the owner before promoting it as the final public release.
+**Photographs are protected original assets. Never use generative transformation or face/body alteration.**
